@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudBand — Organizuj kapelu. Cvič chytřeji.</title>
+  <meta name="description" content="Songy, setlisty, zkoušky a koncerty na jednom místě. Přehrávač se sekcemi, aby ses nemusel prodírat celou nahrávkou.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-yellow: #FADD37;
+      --color-yellow-dark: #E8C91E;
+      --color-blue-deep: #376DAD;
+      --color-blue-sky: #4396FA;
+      --color-purple-deep: #7515AD;
+      --color-purple-bright: #AE2AFA;
+      --color-text: #212529;
+      --color-text-secondary: #6C757D;
+      --color-bg: #FAFBFC;
+      --color-panel: rgba(246, 248, 247, 0.85);
+      --font: 'Commissioner', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font);
+      color: var(--color-text);
+      background: var(--color-bg);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- Background --- */
+    .bg-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.12;
+    }
+
+    .bg-blob--yellow {
+      width: 600px;
+      height: 600px;
+      background: var(--color-yellow);
+      top: -15%;
+      right: -10%;
+      opacity: 0.18;
+    }
+
+    .bg-blob--blue {
+      width: 500px;
+      height: 500px;
+      background: var(--color-blue-sky);
+      bottom: -10%;
+      left: -8%;
+      opacity: 0.10;
+    }
+
+    .bg-blob--purple {
+      width: 350px;
+      height: 350px;
+      background: var(--color-purple-bright);
+      bottom: 20%;
+      right: 5%;
+      opacity: 0.07;
+    }
+
+    /* --- Layout --- */
+    .page {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    .content {
+      max-width: 580px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* --- Logo --- */
+    .logo {
+      margin-bottom: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-emblem {
+      width: 72px;
+      height: 72px;
+      transition: transform 0.3s ease;
+    }
+
+    .logo-emblem:hover {
+      transform: scale(1.08);
+    }
+
+    .logo-wordmark {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+
+    /* --- Headline --- */
+    .headline {
+      font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
+      margin-bottom: 1.25rem;
+      color: var(--color-text);
+    }
+
+    .headline em {
+      font-style: normal;
+      color: var(--color-purple-deep);
+    }
+
+    /* --- Subtitle --- */
+    .subtitle {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      margin-bottom: 2.25rem;
+      font-weight: 400;
+      max-width: 480px;
+    }
+
+    /* --- Features --- */
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .feature-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      background: var(--color-panel);
+      backdrop-filter: blur(10px) saturate(160%);
+      -webkit-backdrop-filter: blur(10px) saturate(160%);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 50rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .feature-tag:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .feature-tag .icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* --- CTA --- */
+    .cta-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 2rem;
+      background: var(--color-yellow);
+      color: var(--color-text);
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.7rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      box-shadow: 0 2px 12px rgba(250, 221, 55, 0.3);
+    }
+
+    .cta-button:hover {
+      transform: scale(1.05);
+      background: var(--color-yellow-dark);
+      box-shadow: 0 4px 20px rgba(250, 221, 55, 0.4);
+    }
+
+    .cta-button:active {
+      transform: scale(0.98);
+    }
+
+    .cta-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .cta-hint {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-weight: 400;
+    }
+
+    /* --- Footer --- */
+    .footer {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      opacity: 0.6;
+    }
+
+    /* --- Animations --- */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      animation: fadeInUp 0.6s ease both;
+    }
+
+    .headline {
+      animation: fadeInUp 0.6s ease 0.1s both;
+    }
+
+    .subtitle {
+      animation: fadeInUp 0.6s ease 0.2s both;
+    }
+
+    .features {
+      animation: fadeInUp 0.6s ease 0.3s both;
+    }
+
+    .cta-block {
+      animation: fadeInUp 0.6s ease 0.4s both;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 480px) {
+      .logo-emblem {
+        width: 56px;
+        height: 56px;
+      }
+
+      .logo-wordmark {
+        font-size: 1.5rem;
+      }
+
+      .logo {
+        margin-bottom: 2rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+      }
+
+      .features {
+        gap: 0.4rem 0.5rem;
+      }
+
+      .feature-tag {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background blobs -->
+  <div class="bg-scene" aria-hidden="true">
+    <div class="bg-blob bg-blob--yellow"></div>
+    <div class="bg-blob bg-blob--blue"></div>
+    <div class="bg-blob bg-blob--purple"></div>
+  </div>
+
+  <main class="page">
+    <div class="content">
+
+      <!-- Logo -->
+      <div class="logo">
+        <svg class="logo-emblem" viewBox="0 0 578 578" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(-31,-31)">
+            <path d="M64,400C64,346.3 101.8,301.4 152.2,290.5C156.5,289.6 160.2,286.9 162.5,283.1C164.8,279.3 165.4,274.8 164.2,270.5C161.5,260.9 160,250.6 160,240C160,178.1 210.1,128 272,128C311.2,128 345.8,148.2 365.8,178.8C370.2,185.5 378.9,188 386.1,184.5C397.6,179.1 410.4,176 424,176C472.6,176 512,215.4 512,264C512,278.1 508.7,291.4 502.8,303.2C500.8,307.3 500.6,312 502.3,316.3C504,320.6 507.5,323.9 511.8,325.4C549.2,338.5 576,374.2 576,416C576,469 533,512 480,512L176,512C114.1,512 64,461.9 64,400Z" fill="rgb(222,191,6)"/>
+          </g>
+          <g transform="translate(-31,-31)">
+            <path d="M160,240C160,178.1 210.1,128 272,128C311.3,128 345.8,148.2 365.8,178.8C370.2,185.5 378.9,187.9 386.1,184.5C397.5,179 410.4,176 424,176C472.6,176 512,215.4 512,264C512,278.1 508.7,291.4 502.8,303.2C500.8,307.3 500.6,312.1 502.3,316.3C504,320.5 507.5,323.9 511.8,325.4C549.2,338.5 576,374.2 576,416C576,469 533,512 480,512L176,512C114.1,512 64,461.9 64,400C64,346.3 101.8,301.4 152.2,290.5C156.5,289.6 160.3,286.9 162.5,283.1C164.7,279.3 165.4,274.8 164.2,270.5C161.5,260.8 160,250.6 160,240ZM272,96C192.5,96 128,160.5 128,240C128,248 128.7,255.9 129.9,263.5C73,282.7 32,336.5 32,400C32,479.5 96.5,544 176,544L480,544C550.7,544 608,486.7 608,416C608,366.1 579.5,323 537.9,301.8C541.8,289.9 544,277.2 544,264C544,197.7 490.3,144 424,144C410.3,144 397.1,146.3 384.8,150.5C358.4,117.3 317.7,96 272,96Z" fill="#212529"/>
+          </g>
+          <g transform="matrix(1.28125,0,0,1.28125,-118.125,-155.4375)">
+            <ellipse cx="341" cy="403" rx="46" ry="42" fill="white"/>
+            <g transform="matrix(-1.111111,0,0,1.111111,679.5555,-44.6667)">
+              <path d="M384,256L360,256C346.7,256 336,266.7 336,280L336,352C326.6,346.9 315.7,344 304,344C268.7,344 240,370.9 240,404C240,437.1 268.7,464 304,464C339.3,464 368,437.1 368,404C368,402.6 368,401.3 367.9,399.9L368,400L368,288L384,288C392.8,288 400,280.8 400,272C400,263.2 392.8,256 384,256ZM304,432C284.4,432 272,417.5 272,404C272,390.5 284.4,376 304,376C323.6,376 336,390.5 336,404C336,417.5 323.7,432 304,432Z" fill="#212529"/>
+            </g>
+          </g>
+        </svg>
+        <span class="logo-wordmark">CloudBand</span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="headline">Organizuj kapelu.<br>Cvič chytřeji. <em>Vše po ruce.</em></h1>
+
+      <!-- Subtitle -->
+      <p class="subtitle">
+        Songy, setlisty, zkoušky i koncerty na jednom místě.
+        Přehrávač s označením sekcí, aby ses nemusel
+        prodírat celou nahrávkou, když potřebuješ jen refrén.
+      </p>
+
+      <!-- Feature tags -->
+      <div class="features">
+        <span class="feature-tag"><span class="icon">🎵</span> Katalog songů</span>
+        <span class="feature-tag"><span class="icon">🎧</span> Přehrávač se sekcemi</span>
+        <span class="feature-tag"><span class="icon">📋</span> Setlisty</span>
+        <span class="feature-tag"><span class="icon">📅</span> Zkoušky a koncerty</span>
+        <span class="feature-tag"><span class="icon">👥</span> Správa kapely</span>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-block">
+        <a href="#" class="cta-button" id="cta">
+          Chci vědět víc
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+        <span class="cta-hint">Zanech nám kontakt — ozveme se, až to bude připravené</span>
+      </div>
+
+    </div>
+
+    <span class="footer">&copy; 2026 CloudBand</span>
+  </main>
+
+</body>
+</html>
